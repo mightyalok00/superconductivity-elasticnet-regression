@@ -23,7 +23,7 @@ superconductivity_elasticnet_project/
 │   ├── train.csv
 │   └── unique_m.csv
 ├── docs/
-│   └── Superconductivity_ElasticNet_Regression_16_Questions.docx
+│   └── 16_questions.md
 ├── notebooks/
 │   └── Superconductivity_ElasticNet_16_Questions.ipynb
 ├── outputs/
