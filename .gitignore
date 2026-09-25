@@ -25,4 +25,7 @@ Thumbs.db
 
 outputs/models/*.joblib
 outputs/figures/*.png
+!outputs/figures/q10_model_comparison.png
+!outputs/figures/q14_actual_vs_predicted.png
+!outputs/figures/q14_residuals.png
 outputs/reports/*.csv
