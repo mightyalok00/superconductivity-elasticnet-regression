@@ -1,9 +1,10 @@
-from contextlib import asynccontextmanager
 from pathlib import Path
+from threading import Lock
 from typing import Dict, List
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sklearn.pipeline import Pipeline
@@ -21,8 +22,19 @@ ROOT = Path(__file__).resolve().parent
 DATA_PATH = ROOT / "data" / "raw" / "train.csv"
 
 model = None
-feature_names: List[str] = []
-training_rows = 0
+model_lock = Lock()
+
+# Read only the header at import time so Railway can start immediately.
+# The full dataset is loaded and ElasticNet is fitted lazily on the first /predict call.
+if not DATA_PATH.exists():
+    raise RuntimeError(f"Dataset not found: {DATA_PATH}")
+
+_header = pd.read_csv(DATA_PATH, nrows=0)
+if TARGET not in _header.columns:
+    raise RuntimeError(f"Target column '{TARGET}' not found in dataset.")
+
+feature_names: List[str] = [col for col in _header.columns if col != TARGET]
+training_rows = 21263
 
 
 class PredictionRequest(BaseModel):
@@ -38,43 +50,39 @@ class PredictionResponse(BaseModel):
     feature_count: int
 
 
-def build_model() -> None:
-    global model, feature_names, training_rows
+def ensure_model() -> Pipeline:
+    """Fit the model once, on demand, and reuse it for later predictions."""
+    global model
 
-    if not DATA_PATH.exists():
-        raise RuntimeError(f"Dataset not found: {DATA_PATH}")
+    if model is not None:
+        return model
 
-    df = pd.read_csv(DATA_PATH)
-    if TARGET not in df.columns:
-        raise RuntimeError(f"Target column '{TARGET}' not found in dataset.")
+    with model_lock:
+        if model is not None:
+            return model
 
-    X = df.drop(columns=[TARGET])
-    y = df[TARGET]
+        df = pd.read_csv(DATA_PATH)
+        X = df[feature_names]
+        y = df[TARGET]
 
-    feature_names = X.columns.tolist()
-    training_rows = len(df)
-
-    model = Pipeline(
-        [
-            ("scale", StandardScaler()),
-            (
-                "model",
-                ElasticNet(
-                    alpha=BEST_ALPHA,
-                    l1_ratio=BEST_L1_RATIO,
-                    max_iter=30000,
-                    random_state=RANDOM_STATE,
+        fitted_model = Pipeline(
+            [
+                ("scale", StandardScaler()),
+                (
+                    "model",
+                    ElasticNet(
+                        alpha=BEST_ALPHA,
+                        l1_ratio=BEST_L1_RATIO,
+                        max_iter=30000,
+                        random_state=RANDOM_STATE,
+                    ),
                 ),
-            ),
-        ]
-    )
-    model.fit(X, y)
+            ]
+        )
+        fitted_model.fit(X, y)
+        model = fitted_model
 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    build_model()
-    yield
+    return model
 
 
 app = FastAPI(
@@ -83,8 +91,7 @@ app = FastAPI(
     description=(
         "Railway-ready FastAPI service for predicting superconducting critical "
         "temperature using the project's tuned ElasticNet regression model."
-    ),
-    lifespan=lifespan,
+    )
 )
 
 
@@ -244,10 +251,11 @@ async def home():
 @app.get("/health", tags=["System"])
 async def health():
     return {
-        "status": "healthy" if model is not None else "starting",
+        "status": "healthy",
         "service": APP_TITLE,
         "version": APP_VERSION,
         "model_ready": model is not None,
+        "model_loading": "lazy_on_first_prediction",
     }
 
 
@@ -291,8 +299,7 @@ async def sample_payload():
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Prediction"])
 async def predict(payload: PredictionRequest):
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model is still loading.")
+    active_model = await run_in_threadpool(ensure_model)
 
     incoming = payload.features
     missing = [name for name in feature_names if name not in incoming]
@@ -314,7 +321,7 @@ async def predict(payload: PredictionRequest):
         columns=feature_names,
     )
 
-    prediction = float(model.predict(row)[0])
+    prediction = float(active_model.predict(row)[0])
 
     return PredictionResponse(
         predicted_critical_temp_k=round(prediction, 4),
