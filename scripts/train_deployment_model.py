@@ -47,6 +47,7 @@ for col in X.columns:
         "max": float(s.max()),
         "mean": float(s.mean()),
         "median": float(s.median()),
+        "std": float(s.std(ddof=0)),
     }
 
 metadata = {
