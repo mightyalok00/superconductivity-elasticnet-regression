@@ -10,6 +10,7 @@
   <img src="https://img.shields.io/badge/Pandas-Data%20Analysis-150458?logo=pandas&logoColor=white" />
   <img src="https://img.shields.io/badge/Jupyter-Notebook-F37626?logo=jupyter&logoColor=white" />
   <img src="https://img.shields.io/badge/Status-Complete-brightgreen" />
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" />
 </p>
 
 > 🔬 Predicting superconducting `critical_temp` from engineered material properties and elemental composition while answering **16 structured analytical questions** with reproducible modeling, cross-validation, feature interpretation, residual analysis, and R&D-oriented conclusions.
@@ -91,6 +92,34 @@ This suggests composition-aware weighting preserves useful information that simp
 | 🧬 ElasticNet Regression | Stable, interpretable regularized model with mixed L1/L2 penalty |
 
 > 💡 Important: ElasticNet was **not forced to “win.”** The project reports the measured result honestly: **Linear Regression achieved the lowest test RMSE in this comparison.**
+
+---
+
+## 📊 Visual Results
+
+### 🤖 Model Comparison
+
+The test-set RMSE comparison below shows that **Linear Regression achieved the lowest RMSE**, while Ridge, Lasso, and ElasticNet performed very similarly.
+
+<p align="center">
+  <img src="outputs/figures/q10_model_comparison.png" alt="Regression model comparison by test RMSE" width="760">
+</p>
+
+### 🎯 Actual vs Predicted — ElasticNet
+
+This plot compares the final ElasticNet predictions with the true critical temperatures. Points closer to the diagonal indicate more accurate predictions.
+
+<p align="center">
+  <img src="outputs/figures/q14_actual_vs_predicted.png" alt="Actual versus predicted superconducting critical temperature using ElasticNet" width="640">
+</p>
+
+### 📉 Residual Distribution — ElasticNet
+
+Residuals are the differences between observed and predicted critical temperatures. The residual distribution helps reveal bias, spread, and large prediction errors.
+
+<p align="center">
+  <img src="outputs/figures/q14_residuals.png" alt="ElasticNet residual distribution" width="760">
+</p>
 
 ---
 
@@ -370,6 +399,14 @@ SEO & Digital Marketing professional transitioning into **Data Science, AI & Mac
     <img src="https://img.shields.io/badge/GitHub-mightyalok00-181717?logo=github&logoColor=white" />
   </a>
 </p>
+
+---
+
+## 📄 License
+
+The **source code and project documentation** in this repository are released under the [MIT License](LICENSE).
+
+> ℹ️ The included UCI Superconductivity dataset is third-party data and is **not relicensed by this repository**. Any reuse of the dataset should follow the terms and attribution requirements of its original source.
 
 ---
 
