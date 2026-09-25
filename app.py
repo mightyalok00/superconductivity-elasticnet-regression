@@ -20,25 +20,28 @@ from sklearn.linear_model import ElasticNet
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-APP_TITLE = "Superconductivity Critical Temperature API"
+from config import settings
+
+APP_TITLE = settings.app_name
 APP_VERSION = "1.2.0"
 MODEL_VERSION = "1.0.0"
-TARGET = "critical_temp"
-RANDOM_STATE = 42
+TARGET = settings.target
+RANDOM_STATE = settings.random_state
 BEST_ALPHA = 0.0001
 BEST_L1_RATIO = 0.9
 STARTED_AT = time.time()
 
 ROOT = Path(__file__).resolve().parent
-DATA_PATH = ROOT / "data" / "raw" / "train.csv"
-MODEL_PATH = ROOT / "outputs" / "models" / "elasticnet_v1.joblib"
-META_PATH = ROOT / "outputs" / "models" / "model_metadata.json"
+DATA_PATH = settings.train_path
+MODEL_PATH = settings.model_path
+META_PATH = settings.metadata_path
 FIGURE_DIR = ROOT / "outputs" / "figures"
 
 model = None
 model_lock = Lock()
 REQUEST_COUNT = 0
 PREDICTION_COUNT = 0
+RATE_BUCKETS: dict[tuple[str, int], int] = {}
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("superconductivity_api")
@@ -243,9 +246,15 @@ app = FastAPI(
     ),
 )
 
+cors_origins = (
+    ["*"]
+    if settings.cors_origins.strip() == "*"
+    else [item.strip() for item in settings.cors_origins.split(",") if item.strip()]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
@@ -260,6 +269,33 @@ async def observability_middleware(request: Request, call_next):
     global REQUEST_COUNT
     REQUEST_COUNT += 1
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+
+    if request.url.path.startswith("/api/v1/"):
+        if settings.require_api_key:
+            supplied_key = request.headers.get("X-API-Key")
+            if not settings.api_key or supplied_key != settings.api_key:
+                return JSONResponse(
+                    {"detail": "A valid X-API-Key header is required."},
+                    status_code=401,
+                    headers={"X-Request-ID": request_id},
+                )
+
+        if settings.enable_rate_limit:
+            client_ip = request.client.host if request.client else "unknown"
+            minute_bucket = int(time.time() // 60)
+            bucket_key = (client_ip, minute_bucket)
+            current = RATE_BUCKETS.get(bucket_key, 0) + 1
+            RATE_BUCKETS[bucket_key] = current
+
+            if current > settings.requests_per_minute:
+                return JSONResponse(
+                    {"detail": "Rate limit exceeded. Try again shortly."},
+                    status_code=429,
+                    headers={
+                        "X-Request-ID": request_id,
+                        "Retry-After": "60",
+                    },
+                )
     started = time.perf_counter()
     try:
         response = await call_next(request)
@@ -622,6 +658,9 @@ async def health():
         "model_loaded": model is not None,
         "artifact_available": MODEL_PATH.exists(),
         "uptime_seconds": round(time.time() - STARTED_AT, 1),
+        "environment": settings.app_env,
+        "rate_limit_enabled": settings.enable_rate_limit,
+        "api_key_required": settings.require_api_key,
     }
 
 
