@@ -24,6 +24,8 @@ venv/
 Thumbs.db
 
 outputs/models/*.joblib
+!outputs/models/elasticnet_v1.joblib
+!outputs/models/model_metadata.json
 outputs/figures/*.png
 !outputs/figures/q10_model_comparison.png
 !outputs/figures/q14_actual_vs_predicted.png
