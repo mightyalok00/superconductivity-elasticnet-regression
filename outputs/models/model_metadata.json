@@ -1,7 +1,7 @@
 {
   "model_name": "ElasticNet Regression",
   "model_version": "1.0.0",
-  "trained_at_utc": "2026-09-25T05:44:41.051678+00:00",
+  "trained_at_utc": "2026-09-25T05:53:06.640261+00:00",
   "training_rows": 21263,
   "feature_count": 81,
   "target": "critical_temp",
