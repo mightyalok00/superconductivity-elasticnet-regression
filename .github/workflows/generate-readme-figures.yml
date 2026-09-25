@@ -1,0 +1,53 @@
+name: Generate README figures
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/generate_readme_figures.py"
+      - ".github/workflows/generate-readme-figures.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  figures:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install plotting dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy matplotlib seaborn scikit-learn
+
+      - name: Generate README figures
+        env:
+          MPLBACKEND: Agg
+        run: python scripts/generate_readme_figures.py
+
+      - name: Commit README figures
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f outputs/figures/q10_model_comparison.png
+          git add -f outputs/figures/q14_actual_vs_predicted.png
+          git add -f outputs/figures/q14_residuals.png
+          if git diff --cached --quiet; then
+            echo "No figure changes to commit."
+          else
+            git commit -m "Generate README result visualizations"
+            git pull --rebase origin main
+            git push
+          fi
