@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented here.
 
+## 1.3.0 — ML Engineering Hardening
+
+- Removed hard-coded Windows user paths from runtime configuration.
+- Added environment-based settings with `pydantic-settings`.
+- Added optional API-key and rate-limit controls, disabled by default.
+- Added `pyproject.toml` for Python project/tooling configuration.
+- Added production Dockerfile, non-root runtime user, and container health check.
+- Added lean `requirements-api.txt` for production images.
+- Added `.dockerignore` and `.env.example`.
+- Expanded API and configuration tests.
+- Added coverage reporting and Ruff checks to CI.
+- Added Docker image build verification to CI.
+- Added feature standard deviations to model metadata.
+- Added lightweight input-drift and API load-test utilities.
+- Removed an unused modeling import caught by CI.
+
+
 ## 1.2.0 — Interactive ML Dashboard
 
 - Added live single-material prediction on the homepage.
