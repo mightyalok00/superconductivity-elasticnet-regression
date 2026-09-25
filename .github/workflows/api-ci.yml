@@ -1,0 +1,57 @@
+name: Validate API and Build Model Artifact
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app.py"
+      - "requirements.txt"
+      - "scripts/train_deployment_model.py"
+      - "tests/**"
+      - "data/raw/train.csv"
+      - ".github/workflows/api-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  api-ci:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build deployment model artifact
+        run: python scripts/train_deployment_model.py
+
+      - name: Run API tests
+        run: pytest -q
+
+      - name: Commit model artifact and metadata
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f outputs/models/elasticnet_v1.joblib
+          git add -f outputs/models/model_metadata.json
+          if git diff --cached --quiet; then
+            echo "No model artifact changes to commit."
+          else
+            git commit -m "Build deployment model artifact"
+            git pull --rebase origin main
+            git push
+          fi
