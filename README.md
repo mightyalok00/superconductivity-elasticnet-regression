@@ -190,53 +190,42 @@ The production service runs on Railway with **Railpack**, one replica, an **On F
 
 The deployed FastAPI application now includes:
 
-- interactive single-sample prediction directly on the homepage,
-- sample payload loading from the training data,
+- interactive single-material prediction,
+- **Load Sample**, **Predict**, **Reset**, **Download JSON**, and **Copy Endpoint** buttons,
+- top-10 per-prediction feature contribution explanations,
+- browser-session prediction history,
+- side-by-side material comparison,
+- grouped feature reference with descriptions and training min/median/max,
+- training-range / out-of-distribution risk scoring,
+- downloadable sample CSV,
+- ranked bulk CSV prediction with optional minimum-temperature filtering,
+- model comparison cards and evaluation plots,
+- live uptime / request / prediction counters,
+- request IDs and response-time headers,
+- structured request logging,
+- dark/light theme toggle,
+- custom favicon and 404 page,
 - versioned `/api/v1` routes,
-- bulk CSV prediction with downloadable results,
-- training-range / out-of-distribution warnings,
-- model version and artifact status reporting,
-- feature schema and range metadata,
-- CORS support for future frontends,
-- automated API tests,
-- a generated deployment model artifact,
-- architecture, model-card, and data-card documentation.
+- saved model artifact + metadata,
+- automated API tests and CI.
 
 ### Versioned API
 
 | Endpoint | Method | Purpose |
 |---|---|---|
-| `/api/v1/predict` | POST | Single prediction with OOD warnings |
-| `/api/v1/predict-batch` | POST | Bulk CSV prediction |
-| `/api/v1/sample` | GET | Example request payload |
-| `/api/v1/schema` | GET | Feature names and training ranges |
-| `/api/v1/model-info` | GET | Model version, parameters, and metrics |
+| `/api/v1/predict` | POST | Single prediction with OOD score and feature contributions |
+| `/api/v1/compare` | POST | Compare two complete materials |
+| `/api/v1/predict-batch` | POST | Ranked CSV predictions with optional temperature filter |
+| `/api/v1/sample` | GET | Example JSON payload |
+| `/api/v1/sample.csv` | GET | Downloadable example CSV |
+| `/api/v1/samples` | GET | Multiple example materials |
+| `/api/v1/schema` | GET | Grouped feature metadata and training ranges |
+| `/api/v1/top-features` | GET | Highest-magnitude ElasticNet coefficients |
+| `/api/v1/model-info` | GET | Model configuration and validated metrics |
+| `/api/v1/metrics` | GET | Live uptime, request and prediction counters |
 | `/api/v1/features` | GET | Ordered model feature list |
 
-Legacy routes such as `/predict`, `/sample`, and `/model-info` remain available for compatibility.
-
-### ML Deployment Artifact
-
-The deployment model is generated with:
-
-~~~bash
-python scripts/train_deployment_model.py
-~~~
-
-This creates:
-
-~~~text
-outputs/models/elasticnet_v1.joblib
-outputs/models/model_metadata.json
-~~~
-
-The API loads the artifact when available. If it is missing, a fallback model can still be fitted on demand.
-
-### Engineering Documentation
-
-- [Model Card](docs/MODEL_CARD.md)
-- [Data Card](docs/DATA_CARD.md)
-- [Architecture](docs/ARCHITECTURE.md)
+Legacy routes remain available where applicable for compatibility.
 
 ---
 
