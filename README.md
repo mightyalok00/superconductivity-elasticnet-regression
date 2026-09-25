@@ -85,6 +85,30 @@ This repository demonstrates:
 - reproducible project organization
 - translation of ML output into scientific/R&D decision support
 
+
+## Question-by-Question Coverage
+
+All **16 project questions** are implemented in the notebook, and each section now ends with an explicit `CONCLUSION Q1` through `CONCLUSION Q16` statement. These conclusions are generated from the analysis results when the notebook is run, so the written answer stays tied to the actual metrics rather than a hard-coded claim.
+
+This includes direct conclusions for:
+
+- target distribution and outliers,
+- strongest positive/negative relationships,
+- multicollinearity,
+- weighted vs unweighted properties,
+- number of elements,
+- physical-property groups,
+- Linear Regression baseline,
+- Ridge comparison,
+- Lasso sparsity,
+- ElasticNet model comparison,
+- best `alpha` and `l1_ratio`,
+- 5-fold CV stability,
+- largest positive/negative coefficients,
+- final test metrics and residual behavior,
+- whether `unique_m.csv` improves prediction,
+- and the R&D decision-support interpretation.
+
 ## Dataset
 
 - `train.csv`: 21,263 rows × 82 columns (81 predictors + `critical_temp`)
