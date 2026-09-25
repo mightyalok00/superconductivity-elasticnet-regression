@@ -335,18 +335,26 @@ superconductivity-elasticnet-regression/
 │   └── reports/
 │       └── final_summary.json
 ├── scripts/
+│   ├── check_input_drift.py
 │   ├── generate_readme_figures.py
+│   ├── load_test.py
 │   └── train_deployment_model.py
 ├── src/
 │   ├── data_loader.py
 │   ├── evaluation.py
 │   └── modeling.py
 ├── tests/
-│   └── test_api.py
+│   ├── test_api.py
+│   └── test_config.py
+├── .dockerignore
+├── .env.example
 ├── app.py
 ├── config.py
+├── Dockerfile
 ├── Procfile
+├── pyproject.toml
 ├── railway.json
+├── requirements-api.txt
 ├── requirements.txt
 ├── run_analysis.py
 ├── CHANGELOG.md
@@ -418,6 +426,74 @@ python run_analysis.py
 
 ---
 
+## ML Engineering
+
+The repository now includes production-oriented engineering support in addition to the modeling notebook and live FastAPI application.
+
+### Containerization
+
+Build the API locally with Docker:
+
+~~~bash
+docker build -t superconductivity-api .
+docker run --rm -p 8000:8000 superconductivity-api
+~~~
+
+The image uses the lean `requirements-api.txt` runtime dependency set, runs as a non-root user, exposes port 8000, and includes a Docker health check.
+
+### Environment Configuration
+
+Runtime settings are managed through `pydantic-settings` in `config.py`.
+
+Copy the example configuration when local overrides are needed:
+
+~~~bash
+cp .env.example .env
+~~~
+
+Environment variables use the `SC_` prefix. Examples include:
+
+~~~text
+SC_APP_ENV=production
+SC_CORS_ORIGINS=*
+SC_ENABLE_RATE_LIMIT=false
+SC_REQUESTS_PER_MINUTE=120
+SC_REQUIRE_API_KEY=false
+SC_API_KEY=replace-me
+~~~
+
+Rate limiting and API-key protection are intentionally disabled by default for the public portfolio demo and can be enabled through environment variables.
+
+### Quality Gates
+
+The API CI workflow verifies:
+
+- Python source compilation,
+- Ruff undefined-name / unused-import checks,
+- deployment-model artifact generation,
+- expanded FastAPI regression tests,
+- coverage reporting,
+- Docker image build,
+- model metadata regeneration.
+
+### Lightweight Monitoring Utilities
+
+Check candidate-data mean shift against training statistics:
+
+~~~bash
+python scripts/check_input_drift.py path/to/new_candidates.csv
+~~~
+
+Run a small HTTP load/smoke test:
+
+~~~bash
+python scripts/load_test.py --url http://127.0.0.1:8000/health --requests 50 --concurrency 5
+~~~
+
+The drift checker is intentionally lightweight. It reports standardized mean shifts and should not be treated as a full production monitoring platform.
+
+---
+
 ## Reproducibility
 
 The repository includes GitHub Actions workflows for:
@@ -452,6 +528,10 @@ The modeling and deployment workflows use:
 - Jupyter Notebook
 - FastAPI
 - Uvicorn
+- Pydantic Settings
+- Pytest / pytest-cov
+- Ruff
+- Docker
 - GitHub Actions
 - Railway
 
@@ -474,8 +554,9 @@ The modeling and deployment workflows use:
 - add SHAP-based explanations as an optional advanced interpretation layer,
 - evaluate the model on an independent superconductivity dataset,
 - add dedicated experiment tracking,
-- add automated deployment-time latency benchmarks,
-- introduce authentication and rate limiting only if public usage grows substantially.
+- add a stronger statistical drift-monitoring workflow if new production data becomes available,
+- add deployment-time latency thresholds to CI,
+- enable authentication/rate limiting if public usage grows substantially.
 
 ---
 
