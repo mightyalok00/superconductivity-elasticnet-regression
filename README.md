@@ -169,6 +169,23 @@ The model is intended as **decision support**, not as proof of causation or a re
 
 ---
 
+## Live Deployment
+
+**Production API:** https://superconductivity-ml-api.up.railway.app
+
+| Resource | URL |
+|---|---|
+| Application | https://superconductivity-ml-api.up.railway.app/ |
+| Swagger API Docs | https://superconductivity-ml-api.up.railway.app/docs |
+| Health Check | https://superconductivity-ml-api.up.railway.app/health |
+| Model Information | https://superconductivity-ml-api.up.railway.app/model-info |
+| Feature Schema | https://superconductivity-ml-api.up.railway.app/features |
+| Sample Payload | https://superconductivity-ml-api.up.railway.app/sample |
+
+The production service runs on Railway with **Railpack**, one replica, an **On Failure** restart policy, and the `/health` endpoint as its deployment health check.
+
+---
+
 ## FastAPI Service
 
 The repository includes a Railway-ready FastAPI application in `app.py`.
@@ -203,12 +220,12 @@ The API-reported validation metrics remain the held-out results from the noteboo
 
 ## Deploy on Railway
 
-This repository already includes:
+This repository includes:
 
 - `Procfile`
-- `railway.json`
+- `railway.json` with **Railpack** configuration
 - FastAPI runtime dependencies in `requirements.txt`
-- `/health` endpoint for Railway health checks
+- `/health` endpoint configured as the Railway health check
 
 ### Deployment Steps
 
