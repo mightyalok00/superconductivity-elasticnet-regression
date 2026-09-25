@@ -186,6 +186,60 @@ The production service runs on Railway with **Railpack**, one replica, an **On F
 
 ---
 
+## Production API Capabilities
+
+The deployed FastAPI application now includes:
+
+- interactive single-sample prediction directly on the homepage,
+- sample payload loading from the training data,
+- versioned `/api/v1` routes,
+- bulk CSV prediction with downloadable results,
+- training-range / out-of-distribution warnings,
+- model version and artifact status reporting,
+- feature schema and range metadata,
+- CORS support for future frontends,
+- automated API tests,
+- a generated deployment model artifact,
+- architecture, model-card, and data-card documentation.
+
+### Versioned API
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/api/v1/predict` | POST | Single prediction with OOD warnings |
+| `/api/v1/predict-batch` | POST | Bulk CSV prediction |
+| `/api/v1/sample` | GET | Example request payload |
+| `/api/v1/schema` | GET | Feature names and training ranges |
+| `/api/v1/model-info` | GET | Model version, parameters, and metrics |
+| `/api/v1/features` | GET | Ordered model feature list |
+
+Legacy routes such as `/predict`, `/sample`, and `/model-info` remain available for compatibility.
+
+### ML Deployment Artifact
+
+The deployment model is generated with:
+
+~~~bash
+python scripts/train_deployment_model.py
+~~~
+
+This creates:
+
+~~~text
+outputs/models/elasticnet_v1.joblib
+outputs/models/model_metadata.json
+~~~
+
+The API loads the artifact when available. If it is missing, a fallback model can still be fitted on demand.
+
+### Engineering Documentation
+
+- [Model Card](docs/MODEL_CARD.md)
+- [Data Card](docs/DATA_CARD.md)
+- [Architecture](docs/ARCHITECTURE.md)
+
+---
+
 ## FastAPI Service
 
 The repository includes a Railway-ready FastAPI application in `app.py`.
@@ -454,10 +508,10 @@ The modeling workflow uses:
 
 - add nonlinear baselines such as Random Forest or Gradient Boosting,
 - add SHAP or permutation-based explanation workflows,
-- add automated API and model tests,
-- add model artifact versioning,
 - evaluate the model on independent superconductivity data,
-- compare deployment-time inference against the notebook baseline.
+- add dedicated experiment tracking,
+- compare deployment-time inference against the notebook baseline,
+- introduce authentication/rate limiting only if public usage grows substantially.
 
 ---
 
