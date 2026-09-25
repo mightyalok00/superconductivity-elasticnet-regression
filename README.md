@@ -8,7 +8,10 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/scikit--learn-ML-orange?logo=scikitlearn&logoColor=white" />
   <img src="https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white" />
-  <img src="https://img.shields.io/badge/Railway-Deployment-0B0D0E?logo=railway&logoColor=white" />
+  <a href="https://superconductivity-ml-api.up.railway.app/"><img src="https://img.shields.io/badge/Live%20API-Railway-success?logo=railway&logoColor=white" /></a>
+  <a href="https://github.com/mightyalok00/superconductivity-elasticnet-regression/actions/workflows/api-ci.yml"><img src="https://github.com/mightyalok00/superconductivity-elasticnet-regression/actions/workflows/api-ci.yml/badge.svg" /></a>
+  <img src="https://img.shields.io/badge/API-v1.2.0-5eead4" />
+  <img src="https://img.shields.io/badge/Model-v1.0.0-60a5fa" />
   <img src="https://img.shields.io/badge/Jupyter-Notebook-F37626?logo=jupyter&logoColor=white" />
   <img src="https://img.shields.io/badge/License-MIT-green.svg" />
 </p>
@@ -28,8 +31,10 @@ A reproducible machine-learning project for predicting superconducting critical 
 | Validation | 5-fold cross-validation + untouched test set |
 | Additional experiment | Elemental composition from `unique_m.csv` |
 | Analytical coverage | **16/16 questions answered** |
-| API | FastAPI |
-| Deployment target | Railway |
+| API | FastAPI **v1.2.0** |
+| Model artifact | ElasticNet **v1.0.0** |
+| Deployment | [Live on Railway](https://superconductivity-ml-api.up.railway.app/) |
+| CI | API tests + model artifact build |
 | License | MIT |
 
 ---
@@ -175,12 +180,13 @@ The model is intended as **decision support**, not as proof of causation or a re
 
 | Resource | URL |
 |---|---|
-| Application | https://superconductivity-ml-api.up.railway.app/ |
+| Interactive Application | https://superconductivity-ml-api.up.railway.app/ |
 | Swagger API Docs | https://superconductivity-ml-api.up.railway.app/docs |
 | Health Check | https://superconductivity-ml-api.up.railway.app/health |
-| Model Information | https://superconductivity-ml-api.up.railway.app/model-info |
-| Feature Schema | https://superconductivity-ml-api.up.railway.app/features |
-| Sample Payload | https://superconductivity-ml-api.up.railway.app/sample |
+| Model Information | https://superconductivity-ml-api.up.railway.app/api/v1/model-info |
+| Feature Schema | https://superconductivity-ml-api.up.railway.app/api/v1/schema |
+| Live Metrics | https://superconductivity-ml-api.up.railway.app/api/v1/metrics |
+| Sample Payload | https://superconductivity-ml-api.up.railway.app/api/v1/sample |
 
 The production service runs on Railway with **Railpack**, one replica, an **On Failure** restart policy, and the `/health` endpoint as its deployment health check.
 
@@ -229,93 +235,43 @@ Legacy routes remain available where applicable for compatibility.
 
 ---
 
-## FastAPI Service
+## Production Deployment
 
-The repository includes a Railway-ready FastAPI application in `app.py`.
+The repository is deployed as an interactive FastAPI application on Railway.
 
-### API Endpoints
+### Runtime Architecture
 
-| Endpoint | Method | Purpose |
-|---|---|---|
-| `/` | GET | Project/API landing page |
-| `/docs` | GET | Interactive Swagger documentation |
-| `/health` | GET | Service health check |
-| `/model-info` | GET | Model configuration and validated metrics |
-| `/features` | GET | Expected feature names |
-| `/sample` | GET | Ready-to-use example prediction payload |
-| `/predict` | POST | Predict superconducting critical temperature |
+At runtime the service:
 
-### Deployment Behavior
+1. starts Uvicorn on Railway's injected `$PORT`,
+2. exposes `/health` immediately for deployment health checks,
+3. loads `outputs/models/elasticnet_v1.joblib` when predictions are requested,
+4. validates the full 81-feature schema,
+5. returns predictions, OOD risk, latency, request IDs, and feature-contribution explanations,
+6. supports ranked bulk CSV scoring and two-material comparisons.
 
-At startup, the API:
+If the saved artifact is unavailable, the application can fit a fallback ElasticNet model from `data/raw/train.csv`.
 
-1. loads `data/raw/train.csv`,
-2. detects all 81 model features,
-3. creates a `StandardScaler + ElasticNet` pipeline,
-4. refits the model on the full available dataset using:
-   - `alpha = 0.0001`
-   - `l1_ratio = 0.9`
-5. exposes the fitted model through the REST API.
-
-The API-reported validation metrics remain the held-out results from the notebook analysis.
-
----
-
-## Deploy on Railway
-
-This repository includes:
-
-- `Procfile`
-- `railway.json` with **Railpack** configuration
-- FastAPI runtime dependencies in `requirements.txt`
-- `/health` endpoint configured as the Railway health check
-
-### Deployment Steps
-
-1. Create a new Railway project.
-2. Choose **Deploy from GitHub Repo**.
-3. Select this repository.
-4. Railway will install dependencies automatically.
-5. The service starts with:
+### Railway Configuration
 
 ~~~bash
 uvicorn app:app --host 0.0.0.0 --port $PORT
 ~~~
 
-6. Generate a public Railway domain.
-7. Open the deployed root URL.
+The included `railway.json` configures:
 
-Once deployed:
+- Railpack build,
+- `/health` deployment health check,
+- restart-on-failure behavior,
+- up to 10 restart attempts.
 
-~~~text
-https://YOUR-RAILWAY-DOMAIN/
-https://YOUR-RAILWAY-DOMAIN/docs
-https://YOUR-RAILWAY-DOMAIN/health
+### Quick API Test
+
+~~~bash
+curl https://superconductivity-ml-api.up.railway.app/api/v1/model-info
 ~~~
 
-### Test a Prediction
-
-Open:
-
-~~~text
-GET /sample
-~~~
-
-Copy the returned payload and send it to:
-
-~~~text
-POST /predict
-~~~
-
-Example response:
-
-~~~json
-{
-  "predicted_critical_temp_k": 42.7315,
-  "model": "ElasticNet Regression",
-  "feature_count": 81
-}
-~~~
+For an interactive request, open the [live application](https://superconductivity-ml-api.up.railway.app/) or [Swagger docs](https://superconductivity-ml-api.up.railway.app/docs).
 
 ---
 
@@ -353,32 +309,47 @@ The notebook answers all 16 structured project questions and includes an explici
 superconductivity-elasticnet-regression/
 ├── .github/
 │   └── workflows/
+│       ├── api-ci.yml
+│       ├── execute-notebook.yml
+│       └── generate-readme-figures.yml
 ├── data/
 │   └── raw/
 │       ├── train.csv
 │       └── unique_m.csv
 ├── docs/
 │   ├── 16_questions.md
+│   ├── ARCHITECTURE.md
+│   ├── DATA_CARD.md
+│   ├── MODEL_CARD.md
 │   └── RESULTS_AND_INTERPRETATION.md
 ├── notebooks/
 │   └── Superconductivity_ElasticNet_16_Questions.ipynb
 ├── outputs/
 │   ├── figures/
+│   │   ├── q10_model_comparison.png
+│   │   ├── q14_actual_vs_predicted.png
+│   │   └── q14_residuals.png
 │   ├── models/
+│   │   ├── elasticnet_v1.joblib
+│   │   └── model_metadata.json
 │   └── reports/
 │       └── final_summary.json
 ├── scripts/
-│   └── generate_readme_figures.py
+│   ├── generate_readme_figures.py
+│   └── train_deployment_model.py
 ├── src/
 │   ├── data_loader.py
 │   ├── evaluation.py
 │   └── modeling.py
+├── tests/
+│   └── test_api.py
 ├── app.py
 ├── config.py
 ├── Procfile
 ├── railway.json
 ├── requirements.txt
 ├── run_analysis.py
+├── CHANGELOG.md
 ├── LICENSE
 └── README.md
 ~~~
@@ -451,18 +422,22 @@ python run_analysis.py
 
 The repository includes GitHub Actions workflows for:
 
+- validating the FastAPI application with automated tests,
+- rebuilding and committing the deployment model artifact,
 - executing the analysis notebook,
 - regenerating README figures,
 - committing generated analysis artifacts.
 
-The modeling workflow uses:
+The modeling and deployment workflows use:
 
 - fixed random state,
 - consistent train/test splitting,
 - scaling inside scikit-learn pipelines,
 - GridSearchCV,
 - 5-fold cross-validation,
-- untouched final test evaluation.
+- untouched final test evaluation,
+- versioned model metadata,
+- API regression tests before deployment.
 
 ---
 
@@ -495,12 +470,12 @@ The modeling workflow uses:
 
 ## Future Work
 
-- add nonlinear baselines such as Random Forest or Gradient Boosting,
-- add SHAP or permutation-based explanation workflows,
-- evaluate the model on independent superconductivity data,
+- add a nonlinear benchmark such as Random Forest or Gradient Boosting,
+- add SHAP-based explanations as an optional advanced interpretation layer,
+- evaluate the model on an independent superconductivity dataset,
 - add dedicated experiment tracking,
-- compare deployment-time inference against the notebook baseline,
-- introduce authentication/rate limiting only if public usage grows substantially.
+- add automated deployment-time latency benchmarks,
+- introduce authentication and rate limiting only if public usage grows substantially.
 
 ---
 
@@ -510,7 +485,17 @@ The modeling workflow uses:
 
 SEO & Digital Marketing professional transitioning into **Data Science, AI and Machine Learning**, with a focus on practical analytics, reproducible ML workflows, model interpretation, and deployable applications.
 
-[GitHub Profile](https://github.com/mightyalok00)
+[GitHub Profile](https://github.com/mightyalok00) · [LinkedIn](https://www.linkedin.com/in/alok-agarwal-seo-ai-ml/) · [Live ML App](https://superconductivity-ml-api.up.railway.app/)
+
+---
+
+## Project Documentation
+
+- [Model Card](docs/MODEL_CARD.md)
+- [Data Card](docs/DATA_CARD.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Results & Interpretation](docs/RESULTS_AND_INTERPRETATION.md)
+- [Changelog](CHANGELOG.md)
 
 ---
 
