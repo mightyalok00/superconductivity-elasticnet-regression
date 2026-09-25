@@ -47,5 +47,6 @@ jobs:
             echo "No generated changes to commit."
           else
             git commit -m "Execute notebook and save analysis outputs"
+            git pull --rebase origin main
             git push
           fi
