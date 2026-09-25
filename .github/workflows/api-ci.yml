@@ -5,8 +5,15 @@ on:
     branches: [main]
     paths:
       - "app.py"
+      - "config.py"
+      - "pyproject.toml"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".env.example"
       - "requirements.txt"
-      - "scripts/train_deployment_model.py"
+      - "requirements-api.txt"
+      - "scripts/**"
+      - "src/**"
       - "tests/**"
       - "data/raw/train.csv"
       - ".github/workflows/api-ci.yml"
@@ -36,13 +43,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Compile Python sources
+        run: python -m compileall app.py config.py src scripts tests
+
+      - name: Ruff undefined-name check
+        run: ruff check --select F app.py config.py src scripts tests
+
       - name: Build deployment model artifact
         run: python scripts/train_deployment_model.py
 
-      - name: Run API tests
+      - name: Run API tests with coverage
         env:
           PYTHONPATH: .
-        run: pytest -q
+        run: pytest --cov=app --cov=src --cov-report=term-missing
+
+      - name: Build Docker image
+        run: docker build -t superconductivity-api:test .
 
       - name: Commit model artifact and metadata
         run: |
