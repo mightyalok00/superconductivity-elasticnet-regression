@@ -326,6 +326,91 @@ python run_analysis.py
 
 ---
 
+## 🚀 FastAPI + Railway Deployment
+
+This repository now includes a production-style FastAPI service in `app.py`.
+
+### 🌐 API endpoints
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/` | GET | Attractive project/API landing page |
+| `/docs` | GET | Interactive Swagger documentation |
+| `/health` | GET | Railway health check |
+| `/model-info` | GET | Model parameters and validated metrics |
+| `/features` | GET | Complete list of expected model features |
+| `/sample` | GET | Ready-to-copy example prediction payload |
+| `/predict` | POST | Predict superconducting critical temperature |
+
+### 🧠 Deployment behavior
+
+At startup, the API:
+
+1. loads `data/raw/train.csv`,
+2. detects the 81 predictor columns automatically,
+3. creates a StandardScaler + ElasticNet pipeline,
+4. refits ElasticNet on the full available training dataset using:
+   - `alpha = 0.0001`
+   - `l1_ratio = 0.9`
+5. exposes the fitted model through the REST API.
+
+The deployed model uses the tuned hyperparameters discovered in this project's notebook. The test metrics shown in the API remain the held-out evaluation results from the analysis notebook.
+
+### 🚂 Deploy on Railway
+
+1. Open **Railway**.
+2. Choose **New Project → Deploy from GitHub repo**.
+3. Select this repository.
+4. Railway will detect the Python project.
+5. The included `railway.json` and `Procfile` start the service with:
+
+~~~bash
+uvicorn app:app --host 0.0.0.0 --port $PORT
+~~~
+
+6. Generate a public Railway domain.
+7. Open your deployed URL.
+
+Your landing page will appear at:
+
+~~~text
+https://YOUR-RAILWAY-DOMAIN/
+~~~
+
+Swagger API docs:
+
+~~~text
+https://YOUR-RAILWAY-DOMAIN/docs
+~~~
+
+### 🧪 Test a prediction
+
+First open:
+
+~~~text
+GET /sample
+~~~
+
+Copy the returned JSON payload, then use it with:
+
+~~~text
+POST /predict
+~~~
+
+Example response:
+
+~~~json
+{
+  "predicted_critical_temp_k": 42.7315,
+  "model": "ElasticNet Regression",
+  "feature_count": 81
+}
+~~~
+
+> ⚠️ The API is a portfolio/R&D decision-support demonstration. Predictions should not be treated as experimental proof or a substitute for laboratory validation.
+
+---
+
 ## 🔁 Reproducibility
 
 The project includes a GitHub Actions workflow that can execute the notebook and save rendered outputs automatically.
